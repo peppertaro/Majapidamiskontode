@@ -1,0 +1,244 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 62.5%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-size: 1.6rem;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  overscroll-behavior-y: none;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  outline: 0;
+  appearance: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+.toast {
+  position: fixed;
+  top: 1.6rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  background: #10b981;
+  color: #fff;
+  padding: 0.6rem 1.6rem;
+  border-radius: 2rem;
+  font-size: 1.4rem;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  &.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+#logo-icon {
+  width: 7rem;
+  height: 7rem;
+}
+
+#logo-text {
+  font-weight: bold;
+  & #logo-name {
+    font-size: 2rem;
+    line-height: 1.2;
+    & > span {
+      display: inline-block;
+      transform-origin: bottom center;
+      &:nth-of-type(2){
+        color: #06c;
+      }
+    }
+    &.loading > span {
+      animation: jump 1s infinite;  
+      &:nth-of-type(2) {
+        animation-delay:.5s;
+      }
+    }
+  }
+  & p {
+    font-size: 1.2rem;
+    color: #666;
+    margin-top: 0.2rem;
+  }
+}
+
+@keyframes jump {
+  5%,95% {transform:scale(1.05, .85);}
+  45%,55% {transform:tlanslateY(-12px);}
+  50% {transform:translateY(-12px) scale(.95,1.05);}
+}
+
+.search-container {
+  position: relative;
+  width: 100%;
+  max-width: 32rem;
+  &:has(input:not(:placeholder-shown))::after {
+    content: "→";
+    position: absolute;
+    right: 1.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #06c;
+    font-weight: bold;
+    pointer-events: none;
+  }  
+}
+
+form {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 1.6rem;
+  & label {
+    position: relative;
+    display: block;
+    margin: 2rem auto;
+  }
+  & label > span {
+    position: absolute;
+    top: 50%;
+    left: 2.2rem;
+    transform: translateY(-50%);
+    color: #777;
+    pointer-events: none;
+    transition: 0.2s ease;
+  }
+  & h2 {
+    margin: 1rem auto 3rem;
+    text-align: center;
+    font-size: 2rem;
+  }
+
+}
+
+input,
+select {
+  display: block;
+  width: 100%;
+  padding: 1.2rem 2.2rem;
+  border: 1px solid #ccc;
+  border-radius: 2.5rem;
+  background: #fff;
+  &:focus {
+    border-color: #06c;
+    & + span {
+      color: #06c;
+      font-weight: bold;
+    }
+  }
+  &:focus + span,
+  &:not(:placeholder-shown) + span {
+    top: 0;
+    transform: translateY(-2rem);
+    font-size: 1.5rem;
+  }
+  [inert] & {
+    pointer-events: none;
+    background-color: #eee;
+  }
+  &[type="file"] {
+    border: none;
+  }
+}
+
+menu {
+  text-align: right;
+  & button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 1.5rem;
+    margin: 0 0.5rem;
+    border-radius: 1.5rem;
+    font-size: 1.8rem;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    color: #65a;
+    background: transparent;
+    border:1px solid #ccc;
+    & + button {
+      margin-left: 0.5rem;
+    }
+    &:hover {
+      background: #65a1;
+    }
+    &[type="submit"],
+    &[data-step="submit"] {
+      background: #65a;
+      color: #fff;
+      border: none;
+      box-shadow: 0 1px 3px #0003;
+      &:hover {
+        background: #549;
+        box-shadow: 0 2px 6px #0004;
+      }
+    }
+    &:active {
+      scale: 0.98;
+    }
+  }
+}
+
+dialog {
+  position: relative;
+  border: 0;
+  padding: 2.4rem;
+  margin: auto;
+  border-radius: 1.2rem;
+  background: #fff;
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.2);
+  width: 30rem;
+  max-width: 90vw;
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
+#dlg-btn {
+ display: flex; 
+ justify-content: flex-end; 
+ gap: 8px;
+}
+
+#dlg-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
