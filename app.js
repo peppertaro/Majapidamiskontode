@@ -82,13 +82,13 @@ handleConfirm = e =>{
   const btn = e.currentTarget;
   if(btn.dataset.step === 'submit')return isLoading(true);
   e.preventDefault();
-  q("#dlg-content")?.querySelectorAll('label')?.forEach(e=>e.inert=true);
+  q("#dlgContent")?.querySelectorAll('label')?.forEach(e=>e.inert=true);
   q("#title").textContent = "Would you like to Submit?";
   btn.textContent = 'Submit';
   btn.dataset.step = 'submit';
 },
 createBtns = ()=>{
-  btns = createEle("menu",{id:"dlg-btns"}),
+  btns = createEle("menu",{id:"dlgBtns"}),
   btns.append(
     createEle("button",{value:"confirm",textContent:"Confirm",onclick:handleConfirm}),
     createEle("button",{value:"cancel", textContent:"Cancel"})
@@ -98,7 +98,7 @@ createBtns = ()=>{
 showDialog = cmd => {
   // reset Dialog
   q("#cmd").value = "";
-  const box = q("#dlg-content");
+  const box = q("#dlgContent");
   if(!box)return err("Invalid request, you may loaded page wrongly.<br>please login again.")
   box?.replaceChildren();
   const action = cmd.replace(/^\//,"");
@@ -129,7 +129,7 @@ showDialog = cmd => {
   q("#dlg").showModal();
 };
 window.addEventListener("syncSuggestions", e => {
-  const el = q("#cmd-list");
+  const el = q("#cmdList");
   if(!el || !e?.detail?.list)return showToast("Something went wrong on obtaining list.");
   isLoading(true);
   const l = e.detail.list,
@@ -144,20 +144,20 @@ window.addEventListener("syncSuggestions", e => {
 }),
 q("#cmd").addEventListener("input", e => {
   const v = e.target.value.trim();
-  if(!q("#cmd-list").querySelector(`option[value="${CSS.escape(v)}"]`))return;
+  if(!q("#cmdList").querySelector(`option[value="${CSS.escape(v)}"]`))return;
   showDialog(v);
 });
 // Initial set up
 const domReady = new Promise(r => document.readyState !== 'loading' ? r() : document.addEventListener('DOMContentLoaded', r)),
 svgReady = new Promise(r => {
-  const e = q('#logo-icon')?.contentWindow,
+  const e = q('#logoIcon')?.contentWindow,
   check = () => e?.loading ? r(e) : requestAnimationFrame(check);
   check();
 });
 Promise.all([domReady, svgReady]).then(([, e]) =>{
   isLoading = state =>{
     e.loading(state);
-    q('#logo-name').classList.toggle('loading',state);
+    q('#logoName').classList.toggle('loading',state);
   };
   isLoading(true);
   if(!getSessionItem("authToken"))return Auth.init();

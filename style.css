@@ -69,12 +69,12 @@ header {
   margin-bottom: 1.2rem;
 }
 
-#logo-icon {
+#logoIcon {
   width: 7rem;
   height: 7rem;
 }
 
-#logo-text {
+#logoText {
   font-weight: bold;
   & #logo-name {
     font-size: 2rem;
@@ -106,7 +106,7 @@ header {
   50% {transform:translateY(-12px) scale(.95,1.05);}
 }
 
-.search-container {
+.searchContainer {
   position: relative;
   width: 100%;
   max-width: 32rem;
@@ -230,13 +230,13 @@ dialog {
   }
 }
 
-#dlg-btn {
+#dlgBtn {
  display: flex; 
  justify-content: flex-end; 
  gap: 8px;
 }
 
-#dlg-close {
+#dlgClose {
   position: absolute;
   top: 1.2rem;
   right: 1.2rem;
