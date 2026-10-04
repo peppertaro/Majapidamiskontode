@@ -115,7 +115,6 @@ header {
 form {
   display: grid;
   grid-template: auto 1fr auto / 1fr;
-  row-gap: 1.6rem;
   max-height: calc(90vh - 2rem);
   & #dlgContent {
     overflow-y: auto;
@@ -193,7 +192,6 @@ menu {
     &:hover {
       background: #65a1;
     }
-    &[type="submit"],
     &[data-step="submit"] {
       background: #65a;
       color: #fff;
