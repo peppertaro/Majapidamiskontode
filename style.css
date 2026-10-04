@@ -76,7 +76,7 @@ header {
 
 #logoText {
   font-weight: bold;
-  & #logo-name {
+  & #logoName {
     font-size: 2rem;
     line-height: 1.2;
     & > span {
@@ -110,22 +110,17 @@ header {
   position: relative;
   width: 100%;
   max-width: 32rem;
-  &:has(input:not(:placeholder-shown))::after {
-    content: "→";
-    position: absolute;
-    right: 1.2rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #06c;
-    font-weight: bold;
-    pointer-events: none;
-  }  
 }
 
 form {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template: auto 1fr auto / 1fr;
   row-gap: 1.6rem;
+  max-height: calc(90vh - 2rem);
+  & #dlgContent {
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
   & label {
     position: relative;
     display: block;
@@ -141,7 +136,7 @@ form {
     transition: 0.2s ease;
   }
   & h2 {
-    margin: 1rem auto 3rem;
+    margin: 0.5rem auto 2.5rem;
     text-align: center;
     font-size: 2rem;
   }
@@ -218,7 +213,7 @@ menu {
 dialog {
   position: relative;
   border: 0;
-  padding: 2.4rem;
+  padding: 2rem;
   margin: auto;
   border-radius: 1.2rem;
   background: #fff;
@@ -238,8 +233,8 @@ dialog {
 
 #dlgClose {
   position: absolute;
-  top: 1.2rem;
-  right: 1.2rem;
+  top: 0.8rem;
+  right: 0.8rem;
   background: none;
   border: none;
   cursor: pointer;
