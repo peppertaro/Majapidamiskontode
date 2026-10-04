@@ -115,7 +115,7 @@ showDialog = cmd => {
   if(!contents)return err("Something went wrong, <br>please login again.");
   box.append(
     ...contents.map(line=>{
-      const { tag = "input", id='', name = id,inert=false, placeholder=" ", options = [], ...props } = line,
+      const { tag = "input", id='', name = id, inert=false, placeholder=" ", options = [], ...props } = line,
       l = createEle("label", {classList:"field",inert});
       if(id==='title')return createEle("h2",{...props,id})
       if(props.type==="date")props.value=new Intl.DateTimeFormat("en-CA").format(new Date(props.value || Date.now()));
