@@ -32,41 +32,18 @@ showToast = v =>{
   toast.classList.add("show");
   setTimeout(()=>toast.classList.remove("show"),3000);
 },
-runFetch = (cmd, payload) => fetch(GAS_URL, {
-  method: "POST",
-  headers: { "Content-Type": "text/plain" },
-  body: JSON.stringify({
-    token: getSessionItem("authToken"),
-    cmd,
-    body: payload
-  })
-})
-.then(res => res.ok
-  ? res.json()
-  : Promise.reject(new Error(`HTTP error: ${res.status}`))
-)
-.then(data => {
-  if(data.error)return Promise.reject(new Error(`Data error: ${data.error}`));
-  if(data?.toast)showToast(data.toast);
-  return data;
-})
-.catch(err => {
-  Auth.clear(err.message);
-  return Promise.reject(err);
-}),
 getCmds = c =>{
   if(!getSessionItem("authToken"))sessionStorage.setItem("authToken",c);  
   if(getSessionItem("actions"))return;
-  return fetchGAS((getSessionItem("authToken") || c),"/list");
+  const f = new FormData();
+  f.set("token", getSessionItem("authToken") || c);
+  f.set("cmd", "/list");
+  return fetchGAS(f);
 },
-fetchGAS = (token,cmd,payload='') => {
+fetchGAS = body => {
   isLoading(true);
   q("#dlg").close();
-  return fetch(GAS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({token,cmd,payload})
-  })
+  return fetch(GAS_URL, {method: "POST",body})
   .then(res => res.ok
     ? res.json()
     : Promise.reject(new Error(`HTTP error: ${res.status}`))
@@ -149,9 +126,16 @@ q("#dlgContainer").addEventListener("submit", e => ({
   },
   submit: () => {
     const ele = e.target,
-    formData = new FormData(ele);
+    f = new FormData(),
+    d = new FormData(ele),
+    csv = d.get("csv");
+    d.delete("csv");
     if(!ele.name) return showToast("Invalid request, please try again.");
-    fetchGAS(getSessionItem("authToken"),`/${ele.name}`,Object.fromEntries(formData.entries()));
+    f.set("token", getSessionItem("authToken") || c);
+    f.set("cmd", `/${ele.name}`);
+    f.set("payload", JSON.stringify(Object.fromEntries(d)));
+    if(csv && csv.size > 0)f.set("csv", csv);
+    fetchGAS(f);
   }
 })[e?.submitter?.value]?.() ?? ''),
 q("#cmd").addEventListener("input", e => {
