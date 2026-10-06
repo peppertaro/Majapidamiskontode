@@ -15,7 +15,7 @@ Auth = {
       if(n?.isNotDisplayed?.()) Auth.clear("Cannot detect the account. Please type [/login].");
     });
   },
-  handleSuccess: res => res.credential ? fetchCmds(res.credential) : Auth.clear("No credential found."),
+  handleSuccess: res => res.credential ? getCmds(res.credential) : Auth.clear("No credential found."),
   clear: err => {
     if(err) showToast(err);
     console.error(err);
@@ -26,6 +26,7 @@ Auth = {
 },
 getSessionItem = (k, v = sessionStorage.getItem(k)) => /^[\[\{]/.test(v) ? JSON.parse(v) : v,
 showToast = v =>{
+  q("#dlg").close();
   isLoading(false);
   toast.innerHTML = v;
   toast.classList.add("show");
@@ -53,44 +54,36 @@ runFetch = (cmd, payload) => fetch(GAS_URL, {
   Auth.clear(err.message);
   return Promise.reject(err);
 }),
-fetchCmds = c => {
-  if(!getSessionItem("authToken"))sessionStorage.setItem("authToken",c);
+getCmds = c =>{
+  if(!getSessionItem("authToken"))sessionStorage.setItem("authToken",c);  
+  if(getSessionItem("actions"))return;
+  return fetchGAS((getSessionItem("authToken") || c),"/list");
+},
+fetchGAS = (token,cmd,payload='') => {
+  isLoading(true);
   q("#dlg").close();
-  const list = getSessionItem("actions");
-  if(list)return Auth.setList(list);
   return fetch(GAS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({
-      token: getSessionItem("authToken") || c,
-      cmd: "/list",
-    })
+    body: JSON.stringify({token,cmd,payload})
   })
   .then(res => res.ok
     ? res.json()
     : Promise.reject(new Error(`HTTP error: ${res.status}`))
   )
-  .then(data => data.error
-    ? Promise.reject(new Error(`Data error: ${data.error}`)) 
-    : Auth.setList(data)
-  )
-  .catch(err => Auth.clear(err.message))
+  .then(data => {
+    if(data?.error) return Promise.reject(new Error(`Data error: ${data.error}`));
+    if(data?.toast) showToast(data.toast);
+    if(data?.list) Auth.setList(data);
+  })
+  .catch(err => Auth.clear(err.message));  
 },
 q = s => document.querySelector(s),
 createEle = (tagName, props = {}) => Object.assign(document.createElement(tagName), props),
-handleConfirm = e =>{  
-  const btn = e.currentTarget;
-  if(btn.dataset.step === 'submit')return isLoading(true);
-  e.preventDefault();
-  q("#dlgContent")?.querySelectorAll('label')?.forEach(e=>e.inert=true);
-  q("#title").textContent = "Would you like to Submit?";
-  btn.textContent = 'Submit';
-  btn.dataset.step = 'submit';
-},
 createBtns = ()=>{
   btns = createEle("menu",{id:"dlgBtns"}),
   btns.append(
-    createEle("button",{value:"confirm", textContent:"Confirm", onclick:handleConfirm}),
+    createEle("button",{value:"confirm", textContent:"Confirm",type:"submit"}),
     createEle("button",{value:"cancel", textContent:"Cancel", formNoValidate:true})
   );
   return btns;
@@ -113,6 +106,7 @@ showDialog = cmd => {
   }
   const contents = getSessionItem("actions")?.[action];
   if(!contents)return err("Something went wrong, <br>please login again.");
+  q('#dlgContainer').name = action;
   box.append(
     ...contents.map(line=>{
       const { tag = "input", id='', name = id, inert = false, placeholder = " ", options = [], required = true, ...props} = line,
@@ -145,6 +139,21 @@ window.addEventListener("syncSuggestions", e => {
   if(e?.detail?.toast)showToast(e.detail.toast);
   isLoading(false);
 }),
+q("#dlgContainer").addEventListener("submit", e => ({
+  confirm: () => {
+    e.preventDefault();
+    q("#dlgContent")?.querySelectorAll('label')?.forEach(e=>e.inert=true);
+    q("#title").textContent = "Would you like to Submit?";
+    e.submitter.textContent = 'Submit';
+    e.submitter.value = 'submit';
+  },
+  submit: () => {
+    const ele = e.target,
+    formData = new FormData(ele);
+    if(!ele.name) return showToast("Invalid request, please try again.");
+    fetchGAS(getSessionItem("authToken"),`/${ele.name}`,Object.fromEntries(formData.entries()));
+  }
+})[e?.submitter?.value]?.() ?? ''),
 q("#cmd").addEventListener("input", e => {
   const v = e.target.value.trim();
   if(!q("#cmdList").querySelector(`option[value="${CSS.escape(v)}"]`))return;
@@ -167,5 +176,5 @@ Promise.all([domReady, svgReady]).then(([, e]) =>{
   const cmds = getSessionItem("actions")??{};
   return Object.keys(cmds).length
   ? Auth.setList({list:cmds,toast:"List successfully loaded from the Session.<br>Enjoy!"})
-  : fetchCmds(getSessionItem("authToken"));
+  : getCmds(getSessionItem("authToken"));
 });

@@ -192,7 +192,7 @@ menu {
     &:hover {
       background: #65a1;
     }
-    &[data-step="submit"] {
+    &[value="submit"] {
       background: #65a;
       color: #fff;
       border: none;
