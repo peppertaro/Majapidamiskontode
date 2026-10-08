@@ -1,28 +1,29 @@
 const GAS_URL="https://script.google.com/macros/s/AKfycbxnrGxFzWxb0Hnr9pund21uMs27Qx-gFboEPw__LusMi9dAnZRjtuT6p-hvVgk0YZRJ/exec",
 Auth = {
-  init:() => {
-    window.google?.accounts?.id?.initialize({
-      client_id: "226873784682-hr7ublchu4h5s9jeovddbp8i7jjc40sr.apps.googleusercontent.com",
-      auto_select: true,
-      use_fedcm_for_prompt: true,
-      callback: res => {
-        isLoading(true);
-        return Auth.handleSuccess(res)
-      }
-    });
-    window.google?.accounts?.id?.prompt(n=>{
-      if(!n)return;
-      if(n?.isNotDisplayed?.()) Auth.clear({msg:"Please type [/login]."});
-    });
+  init:(isForcedLogout = false) => {
+    const g=window.google?.accounts?.id;
+    isLoading(true);
+    if(!g) return;
+    if(isForcedLogout) g._ok = false;
+    if(!g._ok){
+      g?.initialize({
+        client_id: "226873784682-hr7ublchu4h5s9jeovddbp8i7jjc40sr.apps.googleusercontent.com",
+        auto_select: true,
+        use_fedcm_for_prompt: true,
+        callback: res => {
+          isLoading(true);
+          return Auth.handleSuccess(res)
+        }
+      });
+      g._ok=true;
+    }
+    g.prompt(n => n?.isNotDisplayed?.() && Auth.clear({ msg: "Please type [/login]." }));
   },
-  handleSuccess: res => res.credential ? getCmds(res.credential) : Auth.clear({msg:"No credential found.", isError:true, logout:true}),
-  clear: ({msg, isError = false,logout = false}) => {
+  handleSuccess: res => res.credential ? getCmds(res.credential) : Auth.clear({msg:"No credential found.", isError:true}),
+  clear: ({msg, isError = false, isForcedLogout = false}) => {
     if(msg) showToast(msg, isError);
     sessionStorage.clear();
-    if(logout){
-      isLoading(true);
-      return Auth.init();
-    }
+    if(isForcedLogout)return Auth.init(true);
     Auth.setList({list:["login"]});
   },
   setList: e => window.dispatchEvent(new CustomEvent("syncSuggestions", { detail: e })), //CustomEventに渡せるParamはdetailにのみ格納可
@@ -62,7 +63,7 @@ fetchGAS = body => {
   .catch(err => {
     console.error(err);
     if(err.message) showToast(err.message, true);
-    if(err.logout)Auth.clear({msg:"Your account has been logged out. Please login again.", isError:true, logout:true});
+    if(err.logout)Auth.clear({msg:"Your account has been logged out. Please login again.", isError:true, isForcedLogout:true});
   })
 },
 q = s => document.querySelector(s),
@@ -87,7 +88,7 @@ showDialog = cmd => {
     google.accounts.id.renderButton(box,{ theme: "outline", size: "large", shape: "rectangular" });
     return;
   }
-  if(action==="logout")return Auth.clear({msg:"Successfully logged out from the account.",logout:true});
+  if(action==="logout")return Auth.clear({msg:"Successfully logged out from the account."});
   const contents = getSessionItem("actions")?.[action];
   if(!contents)return err("Something went wrong, \nplease login again.");
   q('#dlgContainer').name = action;
@@ -139,7 +140,7 @@ q("#dlgContainer").addEventListener("submit", e => ({
   },
   submit: async() => {
     const token = getSessionItem("authToken");
-    if(!token) return Auth.clear({msg:"Token not found, please login again.",isError:true,logout:true});
+    if(!token) return Auth.clear({msg:"Token not found, please login again.",isError:true,isForcedLogout:true});
     const ele = e.target;
     if(!ele.name) return showToast("Invalid request, please try again.");
     const f = new FormData(ele),    
@@ -170,7 +171,6 @@ Promise.all([domReady, svgReady]).then(([, e]) =>{
     e.loading(state);
     q('#logoName').classList.toggle('loading',state);
   };
-  isLoading(true);
   if(!getSessionItem("authToken"))return Auth.init();
   const cmds = getSessionItem("actions")??{};
   return Object.keys(cmds).length
