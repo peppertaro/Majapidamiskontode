@@ -12,25 +12,31 @@ Auth = {
     });
     window.google?.accounts?.id?.prompt(n=>{
       if(!n)return;
-      if(n?.isNotDisplayed?.()) Auth.clear("Cannot detect the account. Please type [/login].");
+      if(n?.isNotDisplayed?.()) Auth.clear({msg:"Please type [/login]."});
     });
   },
-  handleSuccess: res => res.credential ? getCmds(res.credential) : Auth.clear("No credential found."),
-  clear: err => {
-    if(err) showToast(err);
-    console.error(err);
+  handleSuccess: res => res.credential ? getCmds(res.credential) : Auth.clear({msg:"No credential found.", isError:true, logout:true}),
+  clear: ({msg, isError = false,logout = false}) => {
+    if(msg) showToast(msg, isError);
     sessionStorage.clear();
+    if(logout){
+      isLoading(true);
+      return Auth.init();
+    }
     Auth.setList({list:["login"]});
   },
   setList: e => window.dispatchEvent(new CustomEvent("syncSuggestions", { detail: e })), //CustomEventに渡せるParamはdetailにのみ格納可
 },
 getSessionItem = (k, v = sessionStorage.getItem(k)) => /^[\[\{]/.test(v) ? JSON.parse(v) : v,
-showToast = v =>{
+showToast = (v, isError = false) =>{
   q("#dlg").close();
   isLoading(false);
-  toast.innerHTML = v;
-  toast.classList.add("show");
-  setTimeout(()=>toast.classList.remove("show"),3000);
+  const toast = createEle("div",{"className":`toast show ${isError && "err"}`,"aria-live":"polite","textContent":v});
+  setTimeout(()=>{
+    toast.classList.remove("show");
+    toast.ontransitionend = () => toast.remove();
+  },3000);
+  q("#toastBox").append(toast);
 },
 getCmds = c =>{
   if(!getSessionItem("authToken"))sessionStorage.setItem("authToken",c);  
@@ -43,7 +49,7 @@ getCmds = c =>{
 fetchGAS = body => {
   isLoading(true);
   q("#dlg").close();
-  return fetch(GAS_URL, {method: "POST",body})
+  return fetch(GAS_URL, {method: "POST",body:new URLSearchParams(body)})
   .then(res => res.ok
     ? res.json()
     : Promise.reject(new Error(`HTTP error: ${res.status}`))
@@ -53,7 +59,11 @@ fetchGAS = body => {
     if(data?.toast) showToast(data.toast);
     if(data?.list) Auth.setList(data);
   })
-  .catch(err => Auth.clear(err.message));  
+  .catch(err => {
+    console.error(err);
+    if(err.message) showToast(err.message, true);
+    if(err.logout)Auth.clear({msg:"Your account has been logged out. Please login again.", isError:true, logout:true});
+  })
 },
 q = s => document.querySelector(s),
 createEle = (tagName, props = {}) => Object.assign(document.createElement(tagName), props),
@@ -69,7 +79,7 @@ showDialog = cmd => {
   // reset Dialog
   q("#cmd").value = "";
   const box = q("#dlgContent");
-  if(!box)return err("Invalid request, you may loaded page wrongly.<br>please login again.")
+  if(!box)return err("Invalid request, you may loaded page wrongly.\nplease login again.")
   box?.replaceChildren();
   const action = cmd.replace(/^\//,"");
   if(action==="login"){
@@ -77,19 +87,20 @@ showDialog = cmd => {
     google.accounts.id.renderButton(box,{ theme: "outline", size: "large", shape: "rectangular" });
     return;
   }
-  if(action==="logout"){
-    showToast("Successfully logged out from the account.");
-    return;
-  }
+  if(action==="logout")return Auth.clear({msg:"Successfully logged out from the account.",logout:true});
   const contents = getSessionItem("actions")?.[action];
-  if(!contents)return err("Something went wrong, <br>please login again.");
+  if(!contents)return err("Something went wrong, \nplease login again.");
   q('#dlgContainer').name = action;
   box.append(
     ...contents.map(line=>{
       const { tag = "input", id='', name = id, inert = false, placeholder = " ", options = [], required = true, ...props} = line,
       l = createEle("label", {classList:"field",inert});
       if(id==='title')return createEle("h2",{...props,id})
-      if(props.type==="date")props.value=new Intl.DateTimeFormat("en-CA").format(new Date(props.value || Date.now()));
+      if(props.type==="date"){
+      const d = v => new Intl.DateTimeFormat("en-CA").format(new Date(v || Date.now()));
+        props.value= d(props.value);
+        props.max= d();
+      }
       e = createEle(tag, {...props, id, name, placeholder, required}); 
       if(options.length)e.append(
         createEle("option",{value:"",textContent:"Select an option",disabled:true,hidden:true,selected:true}),
@@ -119,23 +130,27 @@ window.addEventListener("syncSuggestions", e => {
 q("#dlgContainer").addEventListener("submit", e => ({
   confirm: () => {
     e.preventDefault();
+    const csv = new FormData(e.target).get("csv");
+    if(csv?.size && !csv.name.toLowerCase().endsWith(".csv"))return showToast("Invalid file type. Please upload a CSV file.");
     q("#dlgContent")?.querySelectorAll('label')?.forEach(e=>e.inert=true);
     q("#title").textContent = "Would you like to Submit?";
     e.submitter.textContent = 'Submit';
     e.submitter.value = 'submit';
   },
-  submit: () => {
-    const ele = e.target,
-    f = new FormData(),
-    d = new FormData(ele),
-    csv = d.get("csv");
-    d.delete("csv");
+  submit: async() => {
+    const token = getSessionItem("authToken");
+    if(!token) return Auth.clear({msg:"Token not found, please login again.",isError:true,logout:true});
+    const ele = e.target;
     if(!ele.name) return showToast("Invalid request, please try again.");
-    f.set("token", getSessionItem("authToken") || c);
-    f.set("cmd", `/${ele.name}`);
-    f.set("payload", JSON.stringify(Object.fromEntries(d)));
-    if(csv && csv.size > 0)f.set("csv", csv);
-    fetchGAS(f);
+    const f = new FormData(ele),    
+    c = f.get("csv");
+    f.delete("csv");
+    await fetchGAS({
+      token,
+      cmd: `/${ele.name}`,
+      payload: JSON.stringify(Object.fromEntries(f)),
+      ...(c?.size && {csv: await c.text(), filename: c.name})
+    });
   }
 })[e?.submitter?.value]?.() ?? ''),
 q("#cmd").addEventListener("input", e => {
@@ -159,6 +174,6 @@ Promise.all([domReady, svgReady]).then(([, e]) =>{
   if(!getSessionItem("authToken"))return Auth.init();
   const cmds = getSessionItem("actions")??{};
   return Object.keys(cmds).length
-  ? Auth.setList({list:cmds,toast:"List successfully loaded from the Session.<br>Enjoy!"})
+  ? Auth.setList({list:cmds,toast:"List successfully loaded from the Session.\nEnjoy!"})
   : getCmds(getSessionItem("authToken"));
 });
