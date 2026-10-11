@@ -1,4 +1,6 @@
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -31,7 +33,10 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font: inherit;
   color: inherit;
   border: 0;
@@ -50,6 +55,7 @@ button {
   transform: translateX(-50%);
   font-size: 1.4rem;
   pointer-events: none;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -62,8 +68,10 @@ button {
     padding: 0.6rem 1.6rem;
     border-radius: 1.2rem;
     opacity: 0;
-    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.2);
-    transition: transform 0.3s ease, opacity 0.3s ease;    
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+    transition:
+      transform 0.3s ease,
+      opacity 0.3s ease;
   }
   & > .err {
     background: #edd;
@@ -95,14 +103,14 @@ header {
     & > span {
       display: inline-block;
       transform-origin: bottom center;
-      &:nth-of-type(2){
+      &:nth-of-type(2) {
         color: #06c;
       }
     }
     &.loading > span {
-      animation: jump 1s infinite;  
+      animation: jump 1s infinite;
       &:nth-of-type(2) {
-        animation-delay:.5s;
+        animation-delay: 0.5s;
       }
     }
   }
@@ -114,9 +122,17 @@ header {
 }
 
 @keyframes jump {
-  5%,95% {transform:scale(1.05, .85);}
-  45%,55% {transform:tlanslateY(-12px);}
-  50% {transform:translateY(-12px) scale(.95,1.05);}
+  5%,
+  95% {
+    transform: scale(1.05, 0.85);
+  }
+  45%,
+  55% {
+    transform: tlanslateY(-12px);
+  }
+  50% {
+    transform: translateY(-12px) scale(0.95, 1.05);
+  }
 }
 
 .searchContainer {
@@ -152,7 +168,6 @@ form {
     text-align: center;
     font-size: 2rem;
   }
-
 }
 
 input,
@@ -195,10 +210,12 @@ menu {
     margin: 0 0.5rem;
     border-radius: 1.5rem;
     font-size: 1.8rem;
-    transition: background-color 0.2s, box-shadow 0.2s;
+    transition:
+      background-color 0.2s,
+      box-shadow 0.2s;
     color: #65a;
     background: transparent;
-    border:1px solid #ccc;
+    border: 1px solid #ccc;
     & + button {
       margin-left: 0.5rem;
     }
@@ -237,9 +254,9 @@ dialog {
 }
 
 #dlgBtn {
- display: flex; 
- justify-content: flex-end; 
- gap: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 #dlgClose {
