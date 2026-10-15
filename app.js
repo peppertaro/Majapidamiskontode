@@ -19,7 +19,7 @@ Auth = {
     }
     g.prompt(n => n?.isNotDisplayed?.() && Auth.clear({ msg: "Please type [/login]." }));
   },
-  handleSuccess: res => res.credential ? getCmds(res.credential) : Auth.clear({msg:"No credential found.", isError:true}),
+  handleSuccess: res => res.credential ? getCmds(res) : Auth.clear({msg:"No credential found.", isError:true}),
   clear: ({msg, isError = false, isForcedLogout = false}) => {
     if(msg) showToast(msg, isError);
     sessionStorage.clear();
@@ -40,10 +40,13 @@ showToast = (v, isError = false) =>{
   q("#toastBox").append(toast);
 },
 getCmds = c =>{
-  if(!getSessionItem("authToken"))sessionStorage.setItem("authToken",c);  
-  if(getSessionItem("actions"))return;
+  const s = Object.fromEntries(["credential","actions","expiration"].map(k=>[k,getSessionItem(k)]));
+  if(!s.credential)sessionStorage.setItem("credential",c.credential);  
+  if(s.actions)return;
+  const expiration = c?.expiration || JSON.parse(atob(c.credential.split('.')[1])).exp;
+  if(expiration < new Date().getTime()/1000)Auth.clear({msg:"Token expired. Please login again.",isError:true,isForcedLogout:true})
   const f = new FormData();
-  f.set("token", getSessionItem("authToken") || c);
+  f.set("token", s.credential || c.credential);
   f.set("cmd", "/list");
   return fetchGAS(f);
 },
@@ -80,7 +83,7 @@ showDialog = cmd => {
   // reset Dialog
   q("#cmd").value = "";
   const box = q("#dlgContent");
-  if(!box)return err("Invalid request, you may loaded page wrongly.\nplease login again.")
+  if(!box)return Auth.clear({msg:"Invalid request, you may loaded page wrongly."})
   box?.replaceChildren();
   const action = cmd.replace(/^\//,"");
   if(action==="login"){
@@ -89,8 +92,11 @@ showDialog = cmd => {
     return;
   }
   if(action==="logout")return Auth.clear({msg:"Successfully logged out from the account."});
-  const contents = getSessionItem("actions")?.[action];
-  if(!contents)return err("Something went wrong, \nplease login again.");
+  const s = Object.fromEntries(["actions","expiration"].map(k=>[k,getSessionItem(k)]));
+  contents = s.actions?.[action],
+  expiration = parseFloat(s.expiration) || 0;
+  if(expiration < Math.floor(new Date().getTime()/1000))return Auth.clear({msg:"Session Expired.",isError:true, isForcedLogout:true})
+  if(!contents)return Auth.clear({msg:"Something went wrong.",isError:true});
   q('#dlgContainer').name = action;
   box.append(
     ...contents.map(line=>{
@@ -121,9 +127,10 @@ window.addEventListener("syncSuggestions", e => {
   const l = e.detail.list,
   k = Array.isArray(l) ? l : Object.keys(l);
   if(!k.includes("login")){
-    sessionStorage.setItem("actions",JSON.stringify(l));
+    sessionStorage.setItem("actions",JSON.stringify(l));    
     k.push("logout");
   }
+  if(e.detail.expiration)sessionStorage.setItem("expiration",e.detail.expiration);
   el.innerHTML = k.map(v => `<option value="/${v}" />`).join("");
   if(e?.detail?.toast)showToast(e.detail.toast);
   isLoading(false);
@@ -139,7 +146,7 @@ q("#dlgContainer").addEventListener("submit", e => ({
     e.submitter.value = 'submit';
   },
   submit: async() => {
-    const token = getSessionItem("authToken");
+    const token = getSessionItem("credential");
     if(!token) return Auth.clear({msg:"Token not found, please login again.",isError:true,isForcedLogout:true});
     const ele = e.target;
     if(!ele.name) return showToast("Invalid request, please try again.");
@@ -167,13 +174,15 @@ svgReady = new Promise(r => {
   check();
 });
 Promise.all([domReady, svgReady]).then(([, e]) =>{
+  const s = Object.fromEntries(["credential","actions","expiration"].map(k=>[k, getSessionItem(k)])),
+  expiration = parseFloat(s.expiration)||0;
   isLoading = state =>{
     e.loading(state);
     q('#logoName').classList.toggle('loading',state);
   };
-  if(!getSessionItem("authToken"))return Auth.init();
-  const cmds = getSessionItem("actions")??{};
-  return Object.keys(cmds).length
-  ? Auth.setList({list:cmds,toast:"List successfully loaded from the Session.\nEnjoy!"})
-  : getCmds(getSessionItem("authToken"));
+  if(!s.credential)return Auth.init();
+  if(expiration < Math.floor(new Date().getTime()/1000))Auth.clear({msg:"Token expired. Please login again.",isError:true,isForcedLogout:true})
+  return s.actions
+  ? Auth.setList({list:s.actions,toast:"List successfully loaded from the Session.\nEnjoy!"})
+  : getCmds(s);
 });
