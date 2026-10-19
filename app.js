@@ -60,8 +60,8 @@ fetchGAS = body => {
   )
   .then(data => {
     if(data?.error) return Promise.reject(new Error(`Data error: ${data.error}`));
+    if(data?.list) return Auth.setList(data);
     if(data?.toast) showToast(data.toast);
-    if(data?.list) Auth.setList(data);
     if(data?.newVals) {
       const actions = JSON.parse(sessionStorage.getItem('actions'));
       actions[dlgContainer.name] = data.newVals;
