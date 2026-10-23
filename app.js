@@ -119,6 +119,7 @@ showDialog = cmd => {
         ...options.map(opt => new Option(opt))
       );
       l.append(e, id && createEle("span", {textContent: id[0].toUpperCase()+id.slice(1)}));
+      if(props.type==="checkbox")l.append(e, createEle("span", {className:"slider"}))
       return l;
     }),
     createBtns()
