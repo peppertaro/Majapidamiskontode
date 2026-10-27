@@ -125,6 +125,18 @@ showDialog = cmd => {
     createBtns()
   );
   q("#dlg").showModal();
+},
+toUTF8 = async file =>{
+  const b = new Uint8Array(await file.arrayBuffer()),
+  bom = {
+    "239,187,191": "utf-8",
+    "255,254": "utf-16le",
+    "254,255": "utf-16be"
+  },
+  enc = bom[[...b.slice(0, 3)].join(",")]
+    || bom[[...b.slice(0, 2)].join(",")] || "utf-8";
+  try { return new TextDecoder(enc, { fatal: true }).decode(b); }
+  catch { return new TextDecoder("shift_jis").decode(b); }
 };
 window.addEventListener("syncSuggestions", e => {
   const el = q("#cmdList");
@@ -163,7 +175,7 @@ q("#dlgContainer").addEventListener("submit", e => ({
       token,
       cmd: `/${ele.name}`,
       payload: JSON.stringify(Object.fromEntries(f)),
-      ...(c?.size && {csv: await c.text(), filename: c.name})
+      ...(c?.size && {csv: await toUTF8(c), filename: c.name})
     });
   }
 })[e?.submitter?.value]?.() ?? ''),
