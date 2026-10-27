@@ -199,7 +199,7 @@ Promise.all([domReady, svgReady]).then(([, e]) =>{
     q('#logoName').classList.toggle('loading',state);
   };
   if(!s.credential)return Auth.init();
-  if(expiration < Math.floor(new Date().getTime()/1000))Auth.clear({msg:"Token expired. Please login again.",isError:true,isForcedLogout:true})
+  if(expiration < Math.floor(new Date().getTime()/1000))return Auth.clear({msg:"Token expired. Please login again.",isError:true,isForcedLogout:true})
   return s.actions
   ? Auth.setList({list:s.actions,toast:"List successfully loaded from the Session.\nEnjoy!"})
   : getCmds(s);
