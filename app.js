@@ -138,6 +138,13 @@ toUTF8 = async file =>{
   try { return new TextDecoder(enc, { fatal: true }).decode(b); }
   catch { return new TextDecoder("shift_jis").decode(b); }
 };
+window.addEventListener('load', () => navigator.serviceWorker
+  ?.register('./sw.js')
+  ?.catch(err => Auth.clear({
+    msg:`serviceWorker registration failed: ${err}`,
+    isError:true,
+  }))
+);
 window.addEventListener("syncSuggestions", e => {
   const el = q("#cmdList");
   if(!el || !e?.detail?.list)return showToast("Something went wrong on obtaining list.");
