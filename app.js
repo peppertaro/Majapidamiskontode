@@ -140,7 +140,7 @@ toUTF8 = async file =>{
 };
 window.addEventListener('load', () => {
   navigator?.serviceWorker?.register('/sw.js');
-  navigator?.storage?.persist?.();
+  navigator?.storage?.persisted?.()?.then(p=>!p&&navigator.storage.persist?.());
 })
 window.addEventListener("syncSuggestions", e => {
   const el = q("#cmdList");
